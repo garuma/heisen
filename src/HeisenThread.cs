@@ -18,6 +18,8 @@ namespace Heisen
 
 		Action<object> action;
 		object state;
+
+		bool marked = false;
 		
 		HeisenThreadStatus status = HeisenThreadStatus.Inited;
 
@@ -34,7 +36,10 @@ namespace Heisen
 
 		internal void Run ()
 		{
-			continuation.Mark ();
+			if (!marked) {
+				continuation.Mark ();
+				marked = true;
+			}
 			status = HeisenThreadStatus.Started;
 			action (state);
 			status = HeisenThreadStatus.Finished;
@@ -49,6 +54,9 @@ namespace Heisen
 		internal HeisenThreadStatus Status {
 			get {
 				return status;
+			}
+			set {
+				status = value;
 			}
 		}
 	}

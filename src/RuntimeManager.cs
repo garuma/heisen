@@ -7,17 +7,19 @@ namespace Heisen
 	public static class RuntimeManager
 	{
 		[MethodImpl (MethodImplOptions.InternalCall)]
+		static extern void mono_enable_hijack_code_num (int num_methods);
+
+		[MethodImpl (MethodImplOptions.InternalCall)]
 		static extern void mono_enable_hijack_code ();
 		
 		[MethodImpl (MethodImplOptions.InternalCall)]
 		static extern void mono_disable_hijack_code ();
 
 		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern void mono_hijack_add_cont ();
+		static extern void mono_hijack_register_cont (IntPtr ptr);		
 
 		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern void mono_hijack_register_cont (IntPtr ptr);
-		
+		static extern void mono_hijack_print_current_interleaving ();
 
 		public static void RegisterCurrentThread (IntPtr ptr)
 		{
@@ -29,14 +31,20 @@ namespace Heisen
 			mono_enable_hijack_code ();
 		}
 
+		public static void EnableRuntimeInjection (int numMethods)
+		{
+			mono_enable_hijack_code_num (numMethods);
+		}
+
 		public static void DisableRuntimeInjection ()
 		{
 			mono_disable_hijack_code ();
 		}
 
-		public static void RegisterContinuation ()
+		public static void PrintCurrentInterleaving ()
 		{
-			mono_hijack_add_cont ();
+			mono_hijack_print_current_interleaving ();
 		}
+
 	}
 }
