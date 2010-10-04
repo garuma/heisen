@@ -19,12 +19,15 @@ namespace Heisen
 			threads.Enqueue (thread);
 		}
 
-		public static void Run (Action checkInvariants)
+		public static void Run (Action init, Action checkInvariants)
 		{
 			continuation.Mark ();
 			int count = threads.Count;
 
 			while (dontStop) {
+				if (init != null)
+					init ();
+
 				int val = continuation.Store (0);
 				if (!threads.TryDequeue (out currentThread)) {
 					RuntimeManager.DisableRuntimeInjection ();

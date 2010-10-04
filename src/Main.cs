@@ -2,12 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-
 using NDesk.Options;
-
-using Heisen.Tests;
 
 namespace Heisen
 {
@@ -30,9 +25,15 @@ namespace Heisen
 			}
 
 			var dissecter = new AssemblyDissecter (dllToLoad);
-			ReplayInformations infos;
-			foreach (var driver in dissecter.LoadAllTestDriver ())
-				Console.WriteLine ("Running {0}, result: {1}", driver.Name, driver.RunTest (out infos));
+			IReplayInformations infos;
+			foreach (var driver in dissecter.LoadAllTestDriver ()) {
+				if (driver.RunTest (out infos)) {
+					Console.WriteLine ("Running {0}, result: success", driver.Name);
+				} else {
+					Console.WriteLine ("Running {0}, result: failure", driver.Name);
+					infos.DisplayFaultyInterleaving ();
+				}
+			}
 		}
 
 		static void PrintUsage ()

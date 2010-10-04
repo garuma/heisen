@@ -1,11 +1,14 @@
 using System;
+using System.Threading;
 using Heisen;
 
 namespace FooTest
 {
 	public class FooTestClass
 	{
-		static int invariant = 0;
+		//static int invariant = 0;
+		static bool processing = false;
+		static int execution = 0;
 
 		public static void Main ()
 		{
@@ -16,6 +19,33 @@ namespace FooTest
 		}
 
 		static void CheckInvariants ()
+		{
+			if (execution > 1) {
+				Console.WriteLine ("Teh code is wrong but then I'm just a tool, you have to reason about multithreaded code");
+				RuntimeManager.PrintCurrentInterleaving ();
+				Environment.Exit (1);
+			}
+		}
+
+		static void Foo ()
+		{
+			if (!processing) {
+				processing = true;
+				Console.WriteLine ("Plop");
+				Interlocked.Increment (ref execution);
+			}
+		}
+
+		static void Bar ()
+		{
+			if (!processing) {
+				processing = true;
+				Console.WriteLine ("Polp");
+				Interlocked.Increment (ref execution);
+			}
+		}
+
+		/*static void CheckInvariants ()
 		{
 			if (invariant != 2) {
 				Console.WriteLine ("Teh code is wrong but then I'm just a tool, you have to reason about multithreaded code");
@@ -36,7 +66,7 @@ namespace FooTest
 			int val = invariant;
 			val += 1;
 			invariant = val;
-		}
+		}*/
 
 		/*		static void CheckInvariants ()
 		{

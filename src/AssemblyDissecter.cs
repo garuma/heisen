@@ -2,10 +2,9 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Reflection;
 
-using Mono.Cecil;
-
-using Heisen.Tests;
+using Heisen.Framework;
 
 namespace Heisen
 {
@@ -14,20 +13,20 @@ namespace Heisen
 	 */
 	public class AssemblyDissecter
 	{
-		ModuleDefinition module;
+		Assembly assembly;
 		List<TestFixture> testFixtures = new List<TestFixture> ();
 
 		public AssemblyDissecter (string assemblyPath)
 		{
-			module = ModuleDefinition.ReadModule (assemblyPath);
+			assembly = Assembly.LoadFrom (assemblyPath);
 			FindFixtures ();
 		}
 
 		/* The runner will call this method that summarize the following set of operations:
-		 *   - Call method on TestMethod that inject breakpoints in the IL
-		 *   - Write the result assembly in a temporary location
+		 *   - Cook its blackmagic to have a modified execution of TestMethod to test interleavings
+		 *   - Write the boilerplate wrapping code in a temporary result assembly
 		 *   - Load that temporary assembly dynamically
-		 *   - Load a special type implementing ITestDriver that caller will use to control the test execution
+		 *   - Create an instance of a type implementing ITestDriver so that the runner can execute the method and report errors
 		 *   - Return the bunch of them as a IEnumerable (as each ITestDriver manipulate just one TestMethod execution)
 		 */
 		public IEnumerable<ITestDriver> LoadAllTestDriver ()
@@ -38,18 +37,22 @@ namespace Heisen
 		void FindFixtures ()
 		{
 			int num = 0;
+			object[] attributes = null;
 
-			foreach (var typeDef in module.Types) {
-				if (!typeDef.IsPublic || !typeDef.HasInterfaces)
+			foreach (var type in assembly.GetTypes ()) {
+				if (!type.IsClass || (attributes = type.GetCustomAttributes (typeof (HeisenFixtureAttribute), false)).Length == 0)
 					continue;
 
-				if (!typeDef.Interfaces.Any ((i) => i.FullName == typeof (IHeisenTestFixture).FullName))
+				if (attributes.Length > 1)
+					throw new InvalidTestFixtureException (string.Format ("The test fixture {0} has more than one HeisenFixtureAttribute applied", type.Name));
+
+				if (((HeisenFixtureAttribute)attributes[0]).Disabled)
 					continue;
 
-				testFixtures.Add (new TestFixture (typeDef, module));
+				testFixtures.Add (new TestFixture (type));
 				num++;
 			}
-			Console.WriteLine ("Finded {0} fixtures", num.ToString ());
+			Console.WriteLine ("Found {0} fixtures", num.ToString ());
 		}
 	}
 }

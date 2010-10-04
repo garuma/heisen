@@ -1,11 +1,12 @@
 
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Reflection;
+using System.Collections.Generic;
 
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using Heisen.Framework;
+using Heisen.Drivers;
 
 namespace Heisen
 {
@@ -17,24 +18,97 @@ namespace Heisen
 	 */
 	public class TestFixture
 	{
-		TypeDefinition typeDef;
-		ModuleDefinition module;
+		Type type;
+		object typeInstance;
+		MethodInfo[] methods;
 
-		public TestFixture (TypeDefinition typeDef, ModuleDefinition module)
+		public TestFixture (Type type)
 		{
-			this.typeDef = typeDef;
-			this.module = module;
+			this.type = type;
+			this.typeInstance = Activator.CreateInstance (type);
 		}
 		
 		public ITestDriver CreateDriver ()
 		{
-			return null;
+			return new HijackingTestDriver (type, 
+			                                ExtractInitMethod (),
+			                                ExtractTestMethods (),
+			                                ExtractInvariantsMethod ());
 		}
 
 		public string Name {
 			get {
-				return typeDef.FullName;
+				return type.Name;
 			}
+		}
+
+		Action ExtractInitMethod ()
+		{
+			if (methods == null)
+				methods = type.GetMethods ();
+
+			HeisenInitAttribute attribute = null;
+
+			try {
+				MethodInfo method = methods.Single ((m) => (attribute = m.GetAttribute<HeisenInitAttribute> ()) != null);
+				if (attribute.RunOnce) {
+					bool ran = false;
+					return () => { if (ran) return; ran = true; method.Invoke (typeInstance, null); };
+				} else {
+					return () => method.Invoke (typeInstance, null);
+				}
+			} catch {
+				return DoNothing;
+			}
+		}
+
+		Action[] ExtractTestMethods ()
+		{
+			if (methods == null)
+				methods = type.GetMethods ();
+
+			List<Action> actions = new List<Action> ();
+			HeisenTestMethodAttribute attribute = null;
+
+			foreach (var m in methods.Where ((m) => (attribute = m.GetAttribute<HeisenTestMethodAttribute> ()) != null)) {
+				if (attribute.Duplicate == 0)
+					attribute.Duplicate = 1;
+
+				actions.AddRange (Enumerable.Repeat<Action> (() => m.Invoke (typeInstance, null), attribute.Duplicate));	
+			}
+
+			return actions.ToArray ();
+		}
+
+		Action ExtractInvariantsMethod ()
+		{
+			if (methods == null)
+				methods = type.GetMethods ();
+
+			try {
+				MethodInfo method = methods.Single ((m) => m.GetAttribute<HeisenInvariantsAttribute> () != null);
+				
+				return () => method.Invoke (typeInstance, null);
+			} catch {
+				throw new InvalidTestFixtureException (string.Format ("The test fixture {0} has no invariants to test", type.Name));
+			}
+		}
+
+		void DoNothing ()
+		{
+			
+		}
+	}
+
+	internal static class MethodInfoExtension
+	{
+		internal static TAttribute GetAttribute<TAttribute> (this MethodInfo method) where TAttribute : Attribute
+		{
+			object[] tmp = method.GetCustomAttributes (typeof (TAttribute), false);
+			if (tmp.Length == 0)
+				return null;
+			
+			return (tmp[0] as TAttribute);
 		}
 	}
 }
