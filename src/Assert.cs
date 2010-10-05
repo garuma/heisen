@@ -18,22 +18,22 @@ namespace Heisen.Framework
 		public static void IsTrue (bool condition, string msg = null)
 		{
 			if (!condition)
-				Fail ("Expected true but got false: " + (string.IsNullOrEmpty (msg) ? string.Empty : msg));
+				Fail ("Assertion failed: " + (string.IsNullOrEmpty (msg) ? string.Empty : msg));
 		}
 
-		public static void AreEqual<T> (T elem1, T elem2, string msg = null)
+		public static void AreEqual<T> (T expected, T actual, string msg = null)
 		{
-			IsTrue (elem1.Equals (elem2), string.Format ("elem1({0}) is different than elem2({1}): {2}", 
-			                                             elem1.ToString (), 
-			                                             elem2.ToString (), 
+			IsTrue (expected.Equals (actual), string.Format ("expected({0}) is different than actual({1}): {2}", 
+			                                             expected.ToString (), 
+			                                             actual.ToString (), 
 			                                             string.IsNullOrEmpty (msg) ? string.Empty : msg));
 		}
 
-		public static void AreNotEqual<T> (T elem1, T elem2, string msg = null)
+		public static void AreNotEqual<T> (T expected, T actual, string msg = null)
 		{
-			IsTrue (!elem1.Equals (elem2), string.Format ("elem1({0}) is equal to elem2({1}): {2}", 
-			                                              elem1.ToString (), 
-			                                              elem2.ToString (), 
+			IsTrue (!expected.Equals (actual), string.Format ("expected({0}) is equal to actual({1}): {2}", 
+			                                              expected.ToString (), 
+			                                              actual.ToString (), 
 			                                              string.IsNullOrEmpty (msg) ? string.Empty : msg));
 		}
 	}
