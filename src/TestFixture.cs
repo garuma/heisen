@@ -50,7 +50,7 @@ namespace Heisen
 			HeisenInitAttribute attribute = null;
 
 			try {
-				MethodInfo method = methods.Single ((m) => (attribute = m.GetAttribute<HeisenInitAttribute> ()) != null);
+				MethodInfo method = methods.Where ((m) => (attribute = m.GetAttribute<HeisenInitAttribute> ()) != null).First ();
 				if (attribute.RunOnce) {
 					bool ran = false;
 					return () => { if (ran) return; ran = true; method.Invoke (typeInstance, null); };
