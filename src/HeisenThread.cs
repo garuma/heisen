@@ -23,6 +23,9 @@ namespace Heisen
 		
 		HeisenThreadStatus status = HeisenThreadStatus.Inited;
 
+		static int id_cache = 0;
+		int id = id_cache++;
+
 		public HeisenThread (Action a) : this ((o) => a (), null)
 		{
 			
@@ -58,6 +61,11 @@ namespace Heisen
 			set {
 				status = value;
 			}
+		}
+
+		public override string ToString ()
+		{
+			return "HeisenThread[" + id + "]";
 		}
 	}
 }
