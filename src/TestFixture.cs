@@ -74,7 +74,9 @@ namespace Heisen
 				if (attribute.Duplicate == 0)
 					attribute.Duplicate = 1;
 
-				actions.AddRange (Enumerable.Repeat<Action> (() => m.Invoke (typeInstance, null), attribute.Duplicate));	
+				var internalMethod = m;
+
+				actions.AddRange (Enumerable.Repeat<Action> (() => internalMethod.Invoke (typeInstance, null), attribute.Duplicate));
 			}
 
 			return actions.ToArray ();
