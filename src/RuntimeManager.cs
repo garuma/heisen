@@ -7,7 +7,7 @@ namespace Heisen
 	public static class RuntimeManager
 	{
 		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern void mono_enable_hijack_code_num (int num_methods);
+		static extern void mono_hijack_set_num_methods (int num_methods);
 
 		[MethodImpl (MethodImplOptions.InternalCall)]
 		static extern void mono_enable_hijack_code ();
@@ -31,9 +31,9 @@ namespace Heisen
 			mono_enable_hijack_code ();
 		}
 
-		public static void EnableRuntimeInjection (int numMethods)
+		public static void SetNumberMethods (int numMethods)
 		{
-			mono_enable_hijack_code_num (numMethods);
+			mono_hijack_set_num_methods (numMethods);
 		}
 
 		public static void DisableRuntimeInjection ()

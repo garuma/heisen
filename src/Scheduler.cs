@@ -9,8 +9,8 @@ namespace Heisen
 	public static class Scheduler
 	{
 		static Continuation continuation = new Continuation ();
+		static List<HeisenThread> initial = new List<HeisenThread> ();
 		static Queue<HeisenThread> threads = new Queue<HeisenThread> ();
-		static Queue<HeisenThread> save = new Queue<HeisenThread> ();
 		static HeisenThread currentThread;
 		static bool dontStop = true;
 		static int numberOfRun = 1;
@@ -18,6 +18,7 @@ namespace Heisen
 		public static void EnqueueWork (HeisenThread thread)
 		{
 			threads.Enqueue (thread);
+			initial.Add (thread);
 		}
 
 		public static void Run (Action init, Action checkInvariants)
@@ -26,10 +27,14 @@ namespace Heisen
 			int count = threads.Count;
 
 			while (dontStop) {
+				RuntimeManager.SetNumberMethods (count);
+
 				if (init != null)
 					init ();
 
 				int val = continuation.Store (0);
+				if (!dontStop)
+					break;
 				if (!threads.TryDequeue (out currentThread)) {
 					RuntimeManager.DisableRuntimeInjection ();
 					if (checkInvariants != null)
@@ -41,9 +46,9 @@ namespace Heisen
 				}
 				
 				if (currentThread.Status != HeisenThreadStatus.Started) {
-					RuntimeManager.EnableRuntimeInjection (count);
+					RuntimeManager.EnableRuntimeInjection ();
 					currentThread.Run ();
-					//RuntimeManager.DisableRuntimeInjection ();
+					RuntimeManager.DisableRuntimeInjection ();
 					ScheduleNext ();
 				} else {
 					// Restore the heisen thread
@@ -54,12 +59,7 @@ namespace Heisen
 
 		static void Reinit ()
 		{
-			var tmp = save;
-			save = threads;
-			threads = tmp;
-			
-			foreach (var t in threads)
-				t.Status = HeisenThreadStatus.Inited;
+			threads.EnqueueRange (initial);
 		}
 
 		/* This is never called by user code but directly by the runtime */
@@ -87,8 +87,6 @@ namespace Heisen
 		{
 			if (currentThread.Status != HeisenThreadStatus.Finished)
 				threads.Enqueue (currentThread);
-			else
-				save.Enqueue (currentThread);
 
 			continuation.Restore (0);
 		}
@@ -101,6 +99,12 @@ namespace Heisen
 			
 			obj = queue.Dequeue ();
 			return true;
+		}
+
+		static void EnqueueRange<T> (this Queue<T> queue, IEnumerable<T> data)
+		{
+			foreach (var d in data)
+				queue.Enqueue (d);
 		}
 	}
 }
