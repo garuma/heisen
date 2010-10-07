@@ -61,6 +61,7 @@ namespace Heisen.Drivers
 				Scheduler.EnqueueWork (new HeisenThread (action));
 
 			Scheduler.Run (initMethod, invariantsEncapsulated);
+			Console.WriteLine ("Test concluded after {0} mixed-interleaving runs", Scheduler.NumberOfRun.ToString ());
 
 			if (exception != null)
 				infos = new ReplayInfos (exception);

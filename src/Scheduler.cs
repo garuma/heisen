@@ -13,6 +13,7 @@ namespace Heisen
 		static Queue<HeisenThread> save = new Queue<HeisenThread> ();
 		static HeisenThread currentThread;
 		static bool dontStop = true;
+		static int numberOfRun = 1;
 
 		public static void EnqueueWork (HeisenThread thread)
 		{
@@ -34,6 +35,7 @@ namespace Heisen
 					if (checkInvariants != null)
 						checkInvariants ();
 					Reinit ();
+					++numberOfRun;
 					RuntimeManager.EnableRuntimeInjection ();
 					continue;
 				}
@@ -73,6 +75,12 @@ namespace Heisen
 		public static void Stop ()
 		{
 			dontStop = false;
+		}
+
+		public static int NumberOfRun {
+			get {
+				return numberOfRun;
+			}
 		}
 
 		static void ScheduleNext ()
