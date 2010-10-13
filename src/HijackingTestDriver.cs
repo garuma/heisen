@@ -25,6 +25,7 @@ namespace Heisen.Drivers
 			public void DisplayFaultyInterleaving ()
 			{
 				Console.WriteLine (exception.Message);
+				Console.WriteLine ();
 				RuntimeManager.PrintCurrentInterleaving ();
 			}
 		}
