@@ -13,6 +13,7 @@ namespace Heisen
 		static Queue<HeisenThread> threads = new Queue<HeisenThread> ();
 		static HeisenThread currentThread;
 		static bool dontStop = true;
+		static bool forceRestart = false;
 		static int numberOfRun = 1;
 
 		public static void EnqueueWork (HeisenThread thread)
@@ -35,12 +36,16 @@ namespace Heisen
 				int val = continuation.Store (0);
 				if (!dontStop)
 					break;
-				if (!threads.TryDequeue (out currentThread)) {
+				if (forceRestart || !threads.TryDequeue (out currentThread)) {
 					RuntimeManager.DisableRuntimeInjection ();
-					if (checkInvariants != null)
+					if (!forceRestart && checkInvariants != null)
 						checkInvariants ();
 					Reinit ();
 					++numberOfRun;
+					if (forceRestart) {
+						Console.WriteLine ("Forcing restart");
+						forceRestart = false;
+					}
 					RuntimeManager.EnableRuntimeInjection ();
 					continue;
 				}
@@ -59,12 +64,17 @@ namespace Heisen
 
 		static void Reinit ()
 		{
+			threads.Clear ();
 			threads.EnqueueRange (initial);
 		}
 
 		/* This is never called by user code but directly by the runtime */
 		public static void Yield ()
 		{
+			// If there is only one thread left, don't take in account its yielding
+			if (threads.Count == 0)
+				return;
+
 			int val = currentThread.Continuation.Store (0);
 
 			if (val == 0)
@@ -75,6 +85,12 @@ namespace Heisen
 		public static void Stop ()
 		{
 			dontStop = false;
+		}
+
+		public static void ForceRestart ()
+		{
+			forceRestart = true;
+			continuation.Restore (0);
 		}
 
 		public static int NumberOfRun {
